@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Fetcher - Web Interface</title>
+    <title>Image Fetcher - Professional Web Interface</title>
     <style>
         * {
             margin: 0;
@@ -11,155 +11,381 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+            --info: #2196f3;
+            --bg-light: #f5f7fa;
+            --text-dark: #2c3e50;
+            --border: #e0e6ed;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             min-height: 100vh;
             padding: 20px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
+            border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 30px;
+            padding: 40px 30px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         .header h1 {
-            font-size: 2.5em;
+            font-size: 2.8em;
             margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
 
         .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
+            opacity: 0.95;
+            font-size: 1.2em;
+            position: relative;
+            z-index: 1;
         }
 
-        .content {
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin: 10px 5px 0 5px;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--bg-light);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 18px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
             padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 0;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-dark);
+            font-size: 14px;
+        }
+
+        .label-info {
+            font-weight: normal;
+            color: #666;
+            font-size: 12px;
+            margin-left: 5px;
         }
 
         input[type="text"],
         input[type="number"],
-        select {
+        select,
+        textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
             border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            font-size: 15px;
+            transition: all 0.3s;
+            font-family: inherit;
         }
 
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .inline-group {
+        .preset-buttons {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
         }
 
-        button {
+        .preset-btn {
+            padding: 10px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .preset-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .preset-btn small {
+            display: block;
+            font-weight: normal;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        button.primary {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        button:hover {
+        button.primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
         }
 
-        button:active {
+        button.primary:active:not(:disabled) {
             transform: translateY(0);
         }
 
-        button:disabled {
+        button.primary:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
 
-        .status {
+        button.secondary {
+            padding: 10px 20px;
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .alert.warning {
+            background: #fff3e0;
+            border-color: var(--warning);
+            color: #e65100;
+        }
+
+        .alert.info {
+            background: #e3f2fd;
+            border-color: var(--info);
+            color: #1976d2;
+        }
+
+        .alert.success {
+            background: #e8f5e9;
+            border-color: var(--success);
+            color: #2e7d32;
+        }
+
+        .alert.error {
+            background: #ffebee;
+            border-color: var(--error);
+            color: #c62828;
+        }
+
+        .alert h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .alert a {
+            color: inherit;
+            font-weight: 600;
+        }
+
+        .progress-container {
             margin-top: 20px;
-            padding: 15px;
+            padding: 20px;
+            background: var(--bg-light);
             border-radius: 8px;
             display: none;
         }
 
-        .status.show {
+        .progress-container.show {
             display: block;
         }
 
-        .status.running {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            color: #1976d2;
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
 
-        .status.completed {
-            background: #e8f5e9;
-            border-left: 4px solid #4caf50;
-            color: #2e7d32;
+        .progress-bar-container {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
         }
 
-        .status.failed {
-            background: #ffebee;
-            border-left: 4px solid #f44336;
-            color: #c62828;
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s;
+            width: 0%;
         }
 
-        .api-setup {
-            background: #fff3e0;
-            border-left: 4px solid #ff9800;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
         }
 
-        .api-setup h3 {
-            color: #e65100;
-            margin-bottom: 10px;
+        .stat {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
         }
 
-        .api-setup a {
-            color: #e65100;
-            text-decoration: none;
-            font-weight: 600;
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
         }
 
-        .api-setup a:hover {
-            text-decoration: underline;
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
         }
 
         .spinner {
@@ -169,109 +395,454 @@
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .categories {
-            font-size: 0.9em;
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 10px;
+            color: white;
+            font-size: 12px;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+        }
+
+        .history-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .history-item {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .history-date {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .history-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .history-stat {
+            color: #666;
+        }
+
+        .history-stat strong {
+            color: var(--text-dark);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .help-text {
+            font-size: 13px;
             color: #666;
             margin-top: 5px;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .settings-section h3 {
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .footer {
+            background: var(--bg-light);
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            color: var(--text-dark);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Image Fetcher</h1>
-            <p>Download and resize images from multiple sources</p>
+            <h1>🎨 Image Fetcher Pro</h1>
+            <p>Professional image collection tool with multiple sources</p>
+            <div>
+                <span class="badge">v2.0</span>
+                <span class="badge">Multi-Source</span>
+                <span class="badge">Auto-Retry</span>
+                <span class="badge">Progress Tracking</span>
+            </div>
         </div>
 
-        <div class="content">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('fetch')">📥 Fetch Images</button>
+            <button class="tab" onclick="switchTab('history')">📚 History</button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ Settings</button>
+        </div>
+
+        <!-- Fetch Images Tab -->
+        <div id="fetch-tab" class="tab-content active">
             {% if not has_pexels and not has_pixabay %}
-            <div class="api-setup">
-                <h3>Get Better Results!</h3>
+            <div class="alert warning">
+                <h3>⚡ Get Better Results!</h3>
                 <p>Configure API keys for high-quality images from Pexels and Pixabay.</p>
                 <p style="margin-top: 10px;">
                     <a href="https://www.pexels.com/api/" target="_blank">Get Pexels API Key</a> |
                     <a href="https://pixabay.com/api/docs/" target="_blank">Get Pixabay API Key</a>
                 </p>
                 <p style="margin-top: 10px; font-size: 0.9em;">
-                    Run <code>python image_fetcher.py --setup</code> in the command line to configure.
+                    Go to the <strong>Settings</strong> tab to configure your API keys.
                 </p>
             </div>
             {% endif %}
 
-            <form id="fetchForm">
+            <form id="fetchForm" class="form-grid">
                 <div class="form-group">
-                    <label for="theme">Search Theme</label>
-                    <input type="text" id="theme" name="theme" placeholder="e.g., sunset, mountains, ocean" required>
+                    <label for="theme">🔍 Search Theme</label>
+                    <input type="text" id="theme" name="theme"
+                           placeholder="e.g., sunset beach, mountain landscape, city skyline"
+                           required>
+                    <div class="help-text">Be specific for better results</div>
                 </div>
 
-                <div class="inline-group">
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="sources">Image Sources</label>
+                        <label for="sources">📦 Image Sources</label>
                         <select id="sources" name="sources">
                             <option value="all">All Available Sources</option>
-                            {% if has_pexels %}<option value="pexels">Pexels</option>{% endif %}
-                            {% if has_pixabay %}<option value="pixabay">Pixabay</option>{% endif %}
-                            <option value="duckduckgo">DuckDuckGo</option>
+                            {% if has_pexels %}<option value="pexels">Pexels (High Quality)</option>{% endif %}
+                            {% if has_pixabay %}<option value="pixabay">Pixabay (Large Variety)</option>{% endif %}
+                            <option value="duckduckgo">DuckDuckGo (No API Key)</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="count">Number of Images</label>
+                        <label for="count">📊 Number of Images</label>
                         <input type="number" id="count" name="count" value="10" min="1" max="100" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="category">Category (Optional)</label>
-                    <input type="text" id="category" name="category" placeholder="e.g., nature, backgrounds, people">
-                    <div class="categories">
-                        Pixabay: nature, backgrounds, science, education, people, etc. | Pexels: landscape, portrait
+                    <label for="category">🏷️ Category <span class="label-info">(Optional)</span></label>
+                    <input type="text" id="category" name="category"
+                           placeholder="e.g., nature, backgrounds, people">
+                    <div class="help-text">
+                        Pixabay: nature, backgrounds, science, people | Pexels: landscape, portrait
                     </div>
                 </div>
 
-                <button type="submit" id="submitBtn">
-                    <span id="btnText">Fetch Images</span>
+                <div class="form-group">
+                    <label>📐 Size Preset</label>
+                    <div class="preset-buttons">
+                        <div class="preset-btn" onclick="selectPreset('4k', 3840, 2160)">
+                            4K UHD<small>3840×2160</small>
+                        </div>
+                        <div class="preset-btn" onclick="selectPreset('fhd', 1920, 1080)">
+                            Full HD<small>1920×1080</small>
+                        </div>
+                        <div class="preset-btn" onclick="selectPreset('hd', 1280, 720)">
+                            HD<small>1280×720</small>
+                        </div>
+                        <div class="preset-btn" onclick="selectPreset('mobile', 1080, 1920)">
+                            Mobile<small>1080×1920</small>
+                        </div>
+                        <div class="preset-btn" onclick="selectPreset('square', 1080, 1080)">
+                            Square<small>1080×1080</small>
+                        </div>
+                        <div class="preset-btn" onclick="selectPreset('youtube', 1920, 1080)">
+                            YouTube<small>1920×1080</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="width">Width (px)</label>
+                        <input type="number" id="width" name="width" value="1920" min="100" max="7680">
+                    </div>
+                    <div class="form-group">
+                        <label for="height">Height (px)</label>
+                        <input type="number" id="height" name="height" value="1080" min="100" max="4320">
+                    </div>
+                </div>
+
+                <button type="submit" class="primary" id="submitBtn">
+                    <span id="btnText">🚀 Fetch Images</span>
                 </button>
             </form>
 
-            <div id="status" class="status">
-                <strong id="statusTitle">Status:</strong>
-                <p id="statusMessage"></p>
+            <div id="progressContainer" class="progress-container">
+                <div class="progress-header">
+                    <strong id="progressTitle">Processing...</strong>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div id="progressMessage" style="margin-bottom: 15px; color: #666;"></div>
+                <div class="progress-stats" id="progressStats"></div>
             </div>
+
+            <div id="resultsContainer" style="display: none; margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Downloaded Images</h3>
+                    <button class="secondary" onclick="downloadResults()">📥 Download All</button>
+                </div>
+                <div class="gallery" id="resultsGallery"></div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Download History</h2>
+                <button class="secondary" onclick="loadHistory()">🔄 Refresh</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <h3>No downloads yet</h3>
+                    <p>Your download history will appear here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <h2 style="margin-bottom: 20px;">Settings</h2>
+
+            <div class="settings-section">
+                <h3>🔑 API Keys</h3>
+                <p style="color: #666; margin-bottom: 15px;">
+                    Configure API keys for better quality images. Free accounts available!
+                </p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="pexelsKey">Pexels API Key</label>
+                        <input type="text" id="pexelsKey" name="pexelsKey"
+                               value="{% if has_pexels %}••••••••••••••••{% endif %}"
+                               placeholder="Enter your Pexels API key">
+                        <div class="help-text">
+                            <a href="https://www.pexels.com/api/" target="_blank">Get free API key →</a>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pixabayKey">Pixabay API Key</label>
+                        <input type="text" id="pixabayKey" name="pixabayKey"
+                               value="{% if has_pixabay %}••••••••••••••••{% endif %}"
+                               placeholder="Enter your Pixabay API key">
+                        <div class="help-text">
+                            <a href="https://pixabay.com/api/docs/" target="_blank">Get free API key →</a>
+                        </div>
+                    </div>
+
+                    <button class="primary" onclick="saveSettings()">💾 Save Settings</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>ℹ️ About</h3>
+                <p><strong>Version:</strong> 2.0 Professional</p>
+                <p><strong>Features:</strong> Multi-source fetching, Auto-retry, Progress tracking, Metadata saving</p>
+                <p><strong>Sources:</strong> Pexels, Pixabay, DuckDuckGo</p>
+                <p style="margin-top: 10px;">
+                    <strong>GitHub:</strong> <a href="https://github.com/VerbalChainsaw/image-fetcher" target="_blank">View Repository</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            Image Fetcher Pro v2.0 | Built with Python, Flask & Modern Web Technologies |
+            <a href="https://github.com/VerbalChainsaw/image-fetcher" target="_blank">GitHub</a>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <button class="modal-close">✕</button>
+        <div class="modal-content">
+            <img id="modalImage" src="" alt="">
         </div>
     </div>
 
     <script>
-        const form = document.getElementById('fetchForm');
-        const statusDiv = document.getElementById('status');
-        const statusTitle = document.getElementById('statusTitle');
-        const statusMessage = document.getElementById('statusMessage');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-
         let currentJobId = null;
-        let statusInterval = null;
+        let currentPreset = 'fhd';
 
-        form.addEventListener('submit', async (e) => {
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            if (tabName === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Preset selection
+        function selectPreset(name, width, height) {
+            currentPreset = name;
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('width').value = width;
+            document.getElementById('height').value = height;
+        }
+
+        // Initialize with FHD selected
+        document.addEventListener('DOMContentLoaded', () => {
+            selectPreset('fhd', 1920, 1080);
+        });
+
+        // Form submission
+        document.getElementById('fetchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const formData = {
                 theme: document.getElementById('theme').value,
                 count: parseInt(document.getElementById('count').value),
                 sources: document.getElementById('sources').value,
-                category: document.getElementById('category').value
+                category: document.getElementById('category').value,
+                width: parseInt(document.getElementById('width').value),
+                height: parseInt(document.getElementById('height').value)
             };
 
-            // Disable form
-            submitBtn.disabled = true;
-            btnText.innerHTML = '<span class="spinner"></span> Fetching...';
+            // Show progress, hide results
+            document.getElementById('progressContainer').classList.add('show');
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('btnText').innerHTML = '<span class="spinner"></span> Fetching...';
 
             try {
                 const response = await fetch('/api/fetch', {
@@ -286,15 +857,16 @@
                     currentJobId = data.job_id;
                     checkStatus();
                 } else {
-                    showStatus('failed', 'Error', data.error);
-                    resetButton();
+                    showError(data.error);
+                    resetForm();
                 }
             } catch (error) {
-                showStatus('failed', 'Error', 'Failed to connect to server');
-                resetButton();
+                showError('Failed to connect to server');
+                resetForm();
             }
         });
 
+        // Status checking
         async function checkStatus() {
             if (!currentJobId) return;
 
@@ -302,31 +874,168 @@
                 const response = await fetch(`/api/status/${currentJobId}`);
                 const job = await response.json();
 
+                updateProgress(job);
+
                 if (job.status === 'running' || job.status === 'queued') {
-                    showStatus('running', 'Running...', job.progress);
                     setTimeout(checkStatus, 1000);
                 } else if (job.status === 'completed') {
-                    showStatus('completed', 'Completed!', job.progress);
-                    resetButton();
+                    loadResults(currentJobId);
+                    resetForm();
                 } else if (job.status === 'failed') {
-                    showStatus('failed', 'Failed', job.progress);
-                    resetButton();
+                    showError(job.progress);
+                    resetForm();
                 }
             } catch (error) {
-                showStatus('failed', 'Error', 'Failed to check status');
-                resetButton();
+                showError('Failed to check status');
+                resetForm();
             }
         }
 
-        function showStatus(type, title, message) {
-            statusDiv.className = `status show ${type}`;
-            statusTitle.textContent = title;
-            statusMessage.textContent = message;
+        function updateProgress(job) {
+            const percent = job.percent || 0;
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressMessage').textContent = job.progress || '';
+
+            if (job.stats) {
+                document.getElementById('progressStats').innerHTML = `
+                    <div class="stat">
+                        <div class="stat-value">${job.stats.completed || 0}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${job.stats.failed || 0}</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${job.stats.rate || 'N/A'}</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                `;
+            }
         }
 
-        function resetButton() {
-            submitBtn.disabled = false;
-            btnText.textContent = 'Fetch Images';
+        async function loadResults(jobId) {
+            try {
+                const response = await fetch(`/api/results/${jobId}`);
+                const data = await response.json();
+
+                if (data.images && data.images.length > 0) {
+                    const gallery = document.getElementById('resultsGallery');
+                    gallery.innerHTML = data.images.map((img, i) => `
+                        <div class="gallery-item" onclick="showImage('${img.path}')">
+                            <img src="${img.path}" alt="${img.title}" loading="lazy">
+                            <div class="gallery-overlay">
+                                <div><strong>${img.title}</strong></div>
+                                <div>📸 ${img.photographer}</div>
+                                <div>🌐 ${img.source}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    document.getElementById('resultsContainer').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load results:', error);
+            }
+        }
+
+        function showImage(path) {
+            document.getElementById('modalImage').src = path;
+            document.getElementById('imageModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').classList.remove('show');
+        }
+
+        function resetForm() {
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('btnText').textContent = '🚀 Fetch Images';
+        }
+
+        function showError(message) {
+            const container = document.getElementById('progressContainer');
+            container.innerHTML = `
+                <div class="alert error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+            container.classList.add('show');
+        }
+
+        // History
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+
+                const list = document.getElementById('historyList');
+
+                if (data.history && data.history.length > 0) {
+                    list.innerHTML = data.history.map(item => `
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div>
+                                    <div class="history-title">${item.theme}</div>
+                                    <div class="history-date">${new Date(item.timestamp).toLocaleString()}</div>
+                                </div>
+                            </div>
+                            <div class="history-stats">
+                                <span class="history-stat"><strong>${item.count}</strong> images</span>
+                                <span class="history-stat"><strong>${item.sources}</strong></span>
+                                <span class="history-stat"><strong>${item.size}</strong></span>
+                                <span class="history-stat">✅ <strong>${item.success_rate}</strong></span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No downloads yet</h3>
+                            <p>Your download history will appear here</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load history:', error);
+            }
+        }
+
+        // Settings
+        async function saveSettings() {
+            const pexelsKey = document.getElementById('pexelsKey').value;
+            const pixabayKey = document.getElementById('pixabayKey').value;
+
+            // Don't send if it's the placeholder
+            const data = {};
+            if (pexelsKey && !pexelsKey.includes('•')) {
+                data.pexels_key = pexelsKey;
+            }
+            if (pixabayKey && !pixabayKey.includes('•')) {
+                data.pixabay_key = pixabayKey;
+            }
+
+            try {
+                const response = await fetch('/api/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('✅ Settings saved successfully! Refresh the page to see changes.');
+                } else {
+                    alert('❌ Failed to save settings');
+                }
+            } catch (error) {
+                alert('❌ Failed to save settings: ' + error.message);
+            }
+        }
+
+        function downloadResults() {
+            alert('Download functionality coming soon! For now, find your images in the output directory.');
         }
     </script>
 </body>

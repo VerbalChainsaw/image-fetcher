@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """
 Web interface for Image Fetcher using Flask
+Enhanced v2.0 with better UI and features
 """
 
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from pathlib import Path
 import threading
+import json
+import glob
+import os
+from datetime import datetime
 from config import Config
 from image_fetcher import ImageFetcher
 
@@ -13,13 +18,13 @@ app = Flask(__name__)
 config = Config()
 fetcher = ImageFetcher(config)
 
-# Store job status
+# Store job status and results
 jobs = {}
 job_counter = 0
 job_lock = threading.Lock()
 
 
-def run_fetch_job(job_id, theme, count, sources, category):
+def run_fetch_job(job_id, theme, count, sources, category, width, height):
     """Background job to fetch images"""
     global jobs
 
@@ -27,18 +32,23 @@ def run_fetch_job(job_id, theme, count, sources, category):
         with job_lock:
             jobs[job_id]['status'] = 'running'
             jobs[job_id]['progress'] = 'Searching for images...'
+            jobs[job_id]['percent'] = 10
 
-        result_dir = fetcher.fetch_and_process(theme, count, sources, category)
+        # Create fetcher with custom size
+        job_fetcher = ImageFetcher(config, target_size=(width, height))
+        result_dir = job_fetcher.fetch_and_process(theme, count, sources, category)
 
         with job_lock:
             jobs[job_id]['status'] = 'completed'
             jobs[job_id]['progress'] = f'Completed! Images saved to: {result_dir}'
             jobs[job_id]['result_dir'] = str(result_dir)
+            jobs[job_id]['percent'] = 100
 
     except Exception as e:
         with job_lock:
             jobs[job_id]['status'] = 'failed'
             jobs[job_id]['progress'] = f'Error: {str(e)}'
+            jobs[job_id]['percent'] = 0
 
 
 @app.route('/')
@@ -62,6 +72,8 @@ def fetch_images():
     count = int(data.get('count', 10))
     sources = data.get('sources', 'all')
     category = data.get('category', '').strip() or None
+    width = int(data.get('width', 1920))
+    height = int(data.get('height', 1080))
 
     if not theme:
         return jsonify({'error': 'Theme is required'}), 400
@@ -78,12 +90,13 @@ def fetch_images():
             'theme': theme,
             'count': count,
             'status': 'queued',
-            'progress': 'Queued...'
+            'progress': 'Queued...',
+            'percent': 0
         }
 
     # Start background thread
     thread = threading.Thread(target=run_fetch_job,
-                             args=(job_id, theme, count, sources, category))
+                             args=(job_id, theme, count, sources, category, width, height))
     thread.daemon = True
     thread.start()
 
@@ -113,6 +126,78 @@ def setup_api_keys():
         config.set_api_key('pixabay', pixabay_key)
 
     return jsonify({'success': True})
+
+
+@app.route('/api/results/<int:job_id>')
+def get_results(job_id):
+    """Get results of a completed job"""
+    job = jobs.get(job_id)
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+
+    if job['status'] != 'completed':
+        return jsonify({'error': 'Job not completed yet'}), 400
+
+    result_dir = Path(job.get('result_dir', ''))
+    if not result_dir.exists():
+        return jsonify({'error': 'Results not found'}), 404
+
+    # Load metadata
+    metadata_file = result_dir / 'metadata.json'
+    metadata = {}
+    if metadata_file.exists():
+        try:
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+        except:
+            pass
+
+    # Get images
+    images = []
+    for img_file in sorted(result_dir.glob('*.jpg')):
+        # Find metadata for this image
+        img_meta = next((m for m in metadata.get('images', [])
+                        if m['filename'] == img_file.name), {})
+
+        images.append({
+            'path': f'/images/{result_dir.name}/{img_file.name}',
+            'title': img_meta.get('title', img_file.stem),
+            'photographer': img_meta.get('photographer', 'Unknown'),
+            'source': img_meta.get('source', 'Unknown')
+        })
+
+    return jsonify({
+        'images': images,
+        'metadata': metadata
+    })
+
+
+@app.route('/api/history')
+def get_history():
+    """Get download history from metadata files"""
+    output_dir = Path('image_collections')
+    if not output_dir.exists():
+        return jsonify({'history': []})
+
+    history = []
+    for meta_file in sorted(output_dir.glob('*/metadata.json'), reverse=True):
+        try:
+            with open(meta_file, 'r') as f:
+                metadata = json.load(f)
+
+            history.append({
+                'theme': metadata.get('theme', 'Unknown'),
+                'timestamp': metadata.get('timestamp', ''),
+                'count': metadata.get('actual_count', 0),
+                'sources': metadata.get('sources', 'all'),
+                'size': f"{metadata.get('target_size', [0, 0])[0]}x{metadata.get('target_size', [0, 0])[1]}",
+                'success_rate': f"{metadata.get('actual_count', 0)}/{metadata.get('actual_count', 0) + metadata.get('failed_count', 0)}",
+                'duration': metadata.get('duration_seconds', 0)
+            })
+        except:
+            continue
+
+    return jsonify({'history': history[:20]})  # Return last 20
 
 
 @app.route('/images/<path:filename>')
