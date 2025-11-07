@@ -12,7 +12,12 @@ A powerful and flexible tool to download and resize images from multiple sources
 
 1. **🌐 Web Interface (Recommended!)** - Beautiful, modern browser-based UI
    ```bash
+   # Windows:
+   start_web.bat
+
+   # Linux/Mac:
    ./start_web.sh
+
    # Then open: http://127.0.0.1:5000
    ```
 
@@ -23,8 +28,14 @@ A powerful and flexible tool to download and resize images from multiple sources
 
 3. **🖥️ Desktop GUI** - Native application
    ```bash
+   # Windows:
+   start_gui.bat
+
+   # Linux/Mac:
    ./start_gui.sh
    ```
+
+**Windows Users:** Double-click `start.bat` for an interactive menu!
 
 **First time?** Run the test suite to verify everything works:
 ```bash
@@ -389,6 +400,11 @@ Example `metadata.json`:
 8. **Review Metadata** (NEW!): Check `metadata.json` for attribution and source URLs
 
 ## 🔧 Troubleshooting
+
+**Windows Encoding Errors (charmap codec):**
+- FIXED in v2.1! The program now automatically handles Windows encoding
+- Emojis and special characters display correctly or fallback to ASCII
+- If you still see issues, the program will continue to work normally
 
 **403 Rate Limit Error:**
 - Wait a few minutes between searches
