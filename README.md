@@ -2,6 +2,37 @@
 
 A powerful and flexible tool to download and resize images from multiple sources including Pexels, Pixabay, and DuckDuckGo. Perfect for CapCut, video editing, or building image collections!
 
+---
+
+## 🚀 Quick Start
+
+**New to Image Fetcher?** Check out the **[Quick Start Guide](QUICKSTART.md)** for a 60-second introduction!
+
+**Three ways to use Image Fetcher:**
+
+1. **🌐 Web Interface (Recommended!)** - Beautiful, modern browser-based UI
+   ```bash
+   ./start_web.sh
+   # Then open: http://127.0.0.1:5000
+   ```
+
+2. **⌨️ Command Line** - For power users and automation
+   ```bash
+   python image_fetcher.py "sunset beach" 10 --size 4k
+   ```
+
+3. **🖥️ Desktop GUI** - Native application
+   ```bash
+   ./start_gui.sh
+   ```
+
+**First time?** Run the test suite to verify everything works:
+```bash
+python test_suite.py
+```
+
+---
+
 ## ✨ Features
 
 - **Multiple Image Sources**
@@ -81,6 +112,23 @@ The setup wizard will:
 Get free API keys:
 - Pexels: https://www.pexels.com/api/
 - Pixabay: https://pixabay.com/api/docs/
+
+## 🧪 Testing
+
+Verify that everything is working correctly:
+
+```bash
+python test_suite.py
+```
+
+The test suite checks:
+- ✓ All module imports
+- ✓ Configuration system
+- ✓ Image source providers
+- ✓ Image fetcher functionality
+- ✓ Web application setup
+
+Expected output: `🎉 All tests passed! System is ready to use.`
 
 ## Usage
 
@@ -374,13 +422,21 @@ Example `metadata.json`:
 image-fetcher/
 ├── image_fetcher.py      # Main CLI application
 ├── gui_app.py            # Desktop GUI application
-├── web_app.py            # Web interface
+├── web_app.py            # Web interface backend
 ├── config.py             # Configuration management
 ├── image_sources.py      # Image source providers
+├── test_suite.py         # Comprehensive test suite (NEW!)
+├── start_web.sh          # Web interface launcher (NEW!)
+├── start_gui.sh          # Desktop GUI launcher (NEW!)
 ├── templates/
-│   └── index.html        # Web interface template
+│   └── index.html        # Web interface (v2.0 - completely redesigned!)
 ├── requirements.txt      # Python dependencies
-└── README.md            # This file
+├── README.md             # Main documentation
+├── QUICKSTART.md         # Quick start guide (NEW!)
+├── WEB_INTERFACE.md      # Web interface documentation (NEW!)
+├── CHANGELOG.md          # Version history (NEW!)
+├── ENHANCEMENTS.md       # Future roadmap (NEW!)
+└── REVIEW.md             # Code review & debug notes (NEW!)
 ```
 
 ## License

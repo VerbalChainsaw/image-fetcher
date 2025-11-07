@@ -26,6 +26,23 @@ wheels/
 # Image collections output
 image_collections/
 
+# Logs and databases
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Flask
+instance/
+.webassets-cache
+flask_session/
+
 # IDE
 .vscode/
 .idea/
