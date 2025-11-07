@@ -51,13 +51,17 @@ class PexelsSource(ImageSource):
                     'url': photo['src']['original'],
                     'thumbnail': photo['src']['medium'],
                     'source': 'pexels',
-                    'photographer': photo.get('photographer', 'Unknown')
+                    'photographer': photo.get('photographer', 'Unknown'),
+                    'title': photo.get('alt', 'Untitled'),
+                    'id': photo.get('id', '')
                 })
 
             return images[:max_results]
 
         except Exception as e:
-            print(f"  Pexels error: {str(e)[:50]}")
+            import logging
+            logging.error(f"Pexels error: {str(e)}")
+            print(f"  Pexels error: {str(e)[:80]}...")
             return []
 
 
@@ -107,13 +111,17 @@ class PixabaySource(ImageSource):
                     'url': hit['largeImageURL'],
                     'thumbnail': hit['previewURL'],
                     'source': 'pixabay',
-                    'photographer': hit.get('user', 'Unknown')
+                    'photographer': hit.get('user', 'Unknown'),
+                    'title': hit.get('tags', 'Untitled'),
+                    'id': hit.get('id', '')
                 })
 
             return images[:max_results]
 
         except Exception as e:
-            print(f"  Pixabay error: {str(e)[:50]}")
+            import logging
+            logging.error(f"Pixabay error: {str(e)}")
+            print(f"  Pixabay error: {str(e)[:80]}...")
             return []
 
 
@@ -126,17 +134,21 @@ class DuckDuckGoSource(ImageSource):
             # Add a delay to avoid rate limiting
             time.sleep(1)
 
-            # Add category to query if specified
+            # Build search query with optional category and negative keywords
             search_query = query
+
+            # Add negative keywords to filter out gaming content (common issue with search results)
+            negative_keywords = ['game', 'gaming', 'video game', 'league', 'valorant', 'fortnite']
+            search_query = f"{query} -{' -'.join(negative_keywords)}"
+
+            # Add category to query if specified
             if category:
-                # Add negative keywords to filter out gaming content
-                negative_keywords = ['game', 'gaming', 'video game', 'league', 'valorant', 'fortnite']
-                search_query = f"{query} -{' -'.join(negative_keywords)}"
+                search_query = f"{search_query} {category}"
 
             with DDGS() as ddgs:
                 results = list(ddgs.images(
                     keywords=search_query,
-                    max_results=max_results * 2
+                    max_results=max_results * 2  # Fetch extra in case some fail to download
                 ))
 
             images = []
@@ -145,13 +157,17 @@ class DuckDuckGoSource(ImageSource):
                     'url': r['image'],
                     'thumbnail': r.get('thumbnail', r['image']),
                     'source': 'duckduckgo',
-                    'photographer': 'Unknown'
+                    'photographer': 'Unknown',
+                    'title': r.get('title', 'Unknown')
                 })
 
-            return images[:max_results]
+            return images[:max_results * 2]
 
         except Exception as e:
-            print(f"  DuckDuckGo error: {str(e)[:50]}")
+            # Log full error for debugging
+            import logging
+            logging.error(f"DuckDuckGo error: {str(e)}")
+            print(f"  DuckDuckGo error: {str(e)[:80]}...")
             return []
 
 

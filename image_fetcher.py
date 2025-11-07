@@ -6,6 +6,9 @@ Image Fetcher - Download and resize images based on a theme
 import os
 import sys
 import argparse
+import time
+import json
+import logging
 from pathlib import Path
 from datetime import datetime
 import requests
@@ -13,6 +16,23 @@ from PIL import Image
 from io import BytesIO
 from config import Config
 from image_sources import ImageSourceManager
+
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+    print("Note: Install 'tqdm' for progress bars: pip install tqdm")
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(Path.home() / '.image_fetcher.log'),
+        logging.StreamHandler()
+    ]
+)
 
 class ImageFetcher:
     def __init__(self, config, output_dir=None, target_size=(1920, 1080)):
@@ -44,30 +64,54 @@ class ImageFetcher:
         """
         return self.source_manager.search(theme, max_images, sources, category)
 
-    def download_image(self, url, timeout=10):
+    def download_image(self, url, timeout=10, max_retries=3):
         """
-        Download an image from URL
+        Download an image from URL with retry logic
 
         Args:
             url: Image URL
             timeout: Request timeout in seconds
+            max_retries: Maximum number of retry attempts
 
         Returns:
             PIL Image object or None if failed
         """
-        try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(url, timeout=timeout, headers=headers)
-            response.raise_for_status()
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
 
-            img = Image.open(BytesIO(response.content))
-            return img
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, timeout=timeout, headers=headers)
+                response.raise_for_status()
 
-        except Exception as e:
-            print(f"  ✗ Failed to download: {str(e)[:50]}")
-            return None
+                img = Image.open(BytesIO(response.content))
+                return img
+
+            except requests.exceptions.Timeout:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                    logging.warning(f"  Timeout on attempt {attempt + 1}, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logging.error(f"  ✗ Failed after {max_retries} attempts: Timeout")
+                    print(f"  ✗ Failed to download: Timeout after {max_retries} attempts")
+
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt
+                    logging.warning(f"  Network error on attempt {attempt + 1}, retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logging.error(f"  ✗ Failed after {max_retries} attempts: {str(e)}")
+                    print(f"  ✗ Failed to download: {str(e)[:80]}")
+
+            except Exception as e:
+                logging.error(f"  ✗ Unexpected error: {str(e)}")
+                print(f"  ✗ Failed to download: {str(e)[:80]}")
+                break
+
+        return None
 
     def resize_and_crop(self, img):
         """
@@ -119,6 +163,8 @@ class ImageFetcher:
             sources: Which sources to use
             category: Optional category filter
         """
+        start_time = time.time()
+
         # Create output directory with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_theme = "".join(c for c in theme if c.isalnum() or c in (' ', '-', '_')).strip()
@@ -128,33 +174,60 @@ class ImageFetcher:
         theme_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"\n📁 Output directory: {theme_dir}\n")
+        logging.info(f"Starting fetch: theme='{theme}', num_images={num_images}, sources={sources}")
 
         # Search for images
         images = self.search_images(theme, num_images, sources, category)
 
         if not images:
             print("✗ No images found!")
+            logging.warning("No images found for query")
             return
 
         # Download and process images
         saved_count = 0
+        failed_count = 0
+        metadata = {
+            'theme': theme,
+            'timestamp': timestamp,
+            'target_count': num_images,
+            'sources': sources,
+            'category': category,
+            'target_size': self.target_size,
+            'images': []
+        }
+
         print(f"\n⬇️  Downloading and processing images...\n")
 
-        for i, img_data in enumerate(images):
+        # Use tqdm if available, otherwise regular loop
+        image_iterator = tqdm(images, desc="Processing", unit="img", total=num_images) if HAS_TQDM else images
+
+        for i, img_data in enumerate(image_iterator):
             if saved_count >= num_images:
                 break
 
             url = img_data['url']
             source = img_data.get('source', 'unknown')
+            photographer = img_data.get('photographer', 'Unknown')
 
-            print(f"[{saved_count + 1}/{num_images}] Processing image {i + 1} from {source}...")
+            if not HAS_TQDM:
+                print(f"[{saved_count + 1}/{num_images}] Processing image {i + 1} from {source}...")
 
             # Download image
             img = self.download_image(url)
             if img is None:
+                failed_count += 1
                 continue
 
             try:
+                # Validate image quality
+                if img.width < 800 or img.height < 600:
+                    if not HAS_TQDM:
+                        print(f"  ⚠ Skipped: Image too small ({img.width}x{img.height})")
+                    logging.warning(f"Skipped low-resolution image: {img.width}x{img.height}")
+                    failed_count += 1
+                    continue
+
                 # Resize and crop
                 img = self.resize_and_crop(img)
 
@@ -163,17 +236,52 @@ class ImageFetcher:
                 filepath = theme_dir / filename
                 img.save(filepath, 'JPEG', quality=95)
 
-                print(f"  ✓ Saved: {filename}")
+                # Store metadata
+                metadata['images'].append({
+                    'filename': filename,
+                    'source': source,
+                    'photographer': photographer,
+                    'original_url': url,
+                    'title': img_data.get('title', 'Untitled'),
+                    'download_time': datetime.now().isoformat()
+                })
+
+                if not HAS_TQDM:
+                    print(f"  ✓ Saved: {filename}")
+
                 saved_count += 1
 
             except Exception as e:
-                print(f"  ✗ Error processing image: {e}")
+                logging.error(f"Error processing image: {e}")
+                if not HAS_TQDM:
+                    print(f"  ✗ Error processing image: {e}")
+                failed_count += 1
                 continue
 
+        # Save metadata
+        metadata['actual_count'] = saved_count
+        metadata['failed_count'] = failed_count
+        metadata['duration_seconds'] = round(time.time() - start_time, 2)
+
+        metadata_file = theme_dir / 'metadata.json'
+        try:
+            with open(metadata_file, 'w') as f:
+                json.dump(metadata, f, indent=2)
+            logging.info(f"Saved metadata to {metadata_file}")
+        except Exception as e:
+            logging.error(f"Failed to save metadata: {e}")
+
+        # Summary
         print(f"\n{'='*60}")
-        print(f"✅ Successfully saved {saved_count} images to:")
-        print(f"   {theme_dir.absolute()}")
+        print(f"✅ Successfully saved {saved_count} images")
+        if failed_count > 0:
+            print(f"⚠️  Failed to process {failed_count} images")
+        print(f"📊 Success rate: {saved_count}/{saved_count + failed_count} ({100*saved_count/(saved_count+failed_count):.1f}%)")
+        print(f"⏱️  Total time: {metadata['duration_seconds']}s")
+        print(f"📁 Location: {theme_dir.absolute()}")
         print(f"{'='*60}\n")
+
+        logging.info(f"Completed: {saved_count} saved, {failed_count} failed, {metadata['duration_seconds']}s")
 
         return theme_dir
 
@@ -265,14 +373,32 @@ def batch_mode(batch_file):
     fetcher = ImageFetcher(config)
 
     for i, line in enumerate(lines, 1):
-        parts = line.split(',')
-        theme = parts[0].strip()
-        count = int(parts[1].strip()) if len(parts) > 1 else 10
+        try:
+            parts = line.split(',')
+            theme = parts[0].strip()
 
-        print(f"\n[{i}/{len(lines)}] Processing: {theme} ({count} images)")
-        print("-" * 60)
+            if not theme:
+                print(f"✗ Skipping line {i}: Empty theme")
+                continue
 
-        fetcher.fetch_and_process(theme, count)
+            # Parse count with validation
+            try:
+                count = int(parts[1].strip()) if len(parts) > 1 else 10
+                if count <= 0:
+                    print(f"✗ Skipping line {i}: Invalid count (must be > 0)")
+                    continue
+            except (ValueError, IndexError):
+                count = 10  # Default if invalid
+
+            print(f"\n[{i}/{len(lines)}] Processing: {theme} ({count} images)")
+            print("-" * 60)
+
+            fetcher.fetch_and_process(theme, count)
+
+        except Exception as e:
+            print(f"✗ Error processing line {i} ('{line}'): {str(e)}")
+            print("  Continuing with next line...")
+            continue
 
 
 def main():
@@ -330,12 +456,22 @@ Examples:
         parser.print_help()
         sys.exit(1)
 
-    # Parse size
+    # Parse size (support both presets and WIDTHxHEIGHT format)
+    size = None
     try:
-        w, h = args.size.lower().split('x')
-        size = (int(w), int(h))
+        # Try preset first
+        from config import SIZE_PRESETS
+        if args.size.lower() in SIZE_PRESETS:
+            size = SIZE_PRESETS[args.size.lower()]
+            print(f"Using size preset '{args.size}': {size[0]}x{size[1]}")
+        else:
+            # Try WIDTHxHEIGHT format
+            w, h = args.size.lower().split('x')
+            size = (int(w), int(h))
     except:
-        print("✗ Error: Invalid size format. Use WIDTHxHEIGHT (e.g., 1920x1080)")
+        print(f"✗ Error: Invalid size '{args.size}'")
+        print("   Use a preset (4k, fhd, hd, mobile) or WIDTHxHEIGHT (e.g., 1920x1080)")
+        print(f"   Available presets: {', '.join(SIZE_PRESETS.keys())}")
         sys.exit(1)
 
     # Validate inputs

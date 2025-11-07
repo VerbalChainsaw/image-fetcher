@@ -1,0 +1,12 @@
+{
+  "pexels_api_key": "YOUR_PEXELS_API_KEY_HERE",
+  "pixabay_api_key": "YOUR_PIXABAY_API_KEY_HERE",
+  "default_source": "all",
+  "default_size": [1920, 1080],
+  "default_category": null,
+  "output_dir": "image_collections",
+  "min_resolution": [800, 600],
+  "max_retries": 3,
+  "timeout": 10,
+  "jpeg_quality": 95
+}

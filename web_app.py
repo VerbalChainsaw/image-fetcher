@@ -24,18 +24,21 @@ def run_fetch_job(job_id, theme, count, sources, category):
     global jobs
 
     try:
-        jobs[job_id]['status'] = 'running'
-        jobs[job_id]['progress'] = 'Searching for images...'
+        with job_lock:
+            jobs[job_id]['status'] = 'running'
+            jobs[job_id]['progress'] = 'Searching for images...'
 
         result_dir = fetcher.fetch_and_process(theme, count, sources, category)
 
-        jobs[job_id]['status'] = 'completed'
-        jobs[job_id]['progress'] = f'Completed! Images saved to: {result_dir}'
-        jobs[job_id]['result_dir'] = str(result_dir)
+        with job_lock:
+            jobs[job_id]['status'] = 'completed'
+            jobs[job_id]['progress'] = f'Completed! Images saved to: {result_dir}'
+            jobs[job_id]['result_dir'] = str(result_dir)
 
     except Exception as e:
-        jobs[job_id]['status'] = 'failed'
-        jobs[job_id]['progress'] = f'Error: {str(e)}'
+        with job_lock:
+            jobs[job_id]['status'] = 'failed'
+            jobs[job_id]['progress'] = f'Error: {str(e)}'
 
 
 @app.route('/')
