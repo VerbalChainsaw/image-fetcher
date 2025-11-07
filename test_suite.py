@@ -11,6 +11,13 @@ from pathlib import Path
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Fix Windows encoding issues
+try:
+    from utils import setup_windows_encoding, safe_print
+    setup_windows_encoding()
+except ImportError:
+    safe_print = print
+
 def test_imports():
     """Test that all modules import correctly"""
     print("=" * 60)
@@ -19,7 +26,7 @@ def test_imports():
 
     try:
         from config import Config, SIZE_PRESETS
-        print("✓ config.py imports successfully")
+        safe_print("✓ config.py imports successfully")
         print(f"  - {len(SIZE_PRESETS)} size presets available")
     except Exception as e:
         print(f"✗ config.py failed: {e}")
@@ -29,28 +36,28 @@ def test_imports():
         from image_sources import (ImageSource, PexelsSource,
                                    PixabaySource, DuckDuckGoSource,
                                    ImageSourceManager)
-        print("✓ image_sources.py imports successfully")
+        safe_print("✓ image_sources.py imports successfully")
     except Exception as e:
         print(f"✗ image_sources.py failed: {e}")
         return False
 
     try:
         from image_fetcher import ImageFetcher
-        print("✓ image_fetcher.py imports successfully")
+        safe_print("✓ image_fetcher.py imports successfully")
     except Exception as e:
         print(f"✗ image_fetcher.py failed: {e}")
         return False
 
     try:
         from flask import Flask
-        print("✓ Flask imports successfully")
+        safe_print("✓ Flask imports successfully")
     except Exception as e:
         print(f"✗ Flask failed: {e}")
         return False
 
     try:
         import tqdm
-        print("✓ tqdm imports successfully")
+        safe_print("✓ tqdm imports successfully")
     except Exception as e:
         print("⚠ tqdm not available (progress bars disabled)")
 
@@ -164,7 +171,7 @@ def test_web_app():
     try:
         from web_app import app
 
-        print("✓ Web app imports successfully")
+        safe_print("✓ Web app imports successfully")
 
         # Check routes
         routes = [rule.rule for rule in app.url_map.iter_rules()]

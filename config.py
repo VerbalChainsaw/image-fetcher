@@ -7,6 +7,13 @@ import os
 from pathlib import Path
 import json
 
+# Fix Windows encoding issues
+try:
+    from utils import setup_windows_encoding, safe_print
+    setup_windows_encoding()
+except ImportError:
+    safe_print = print
+
 # Size presets for common use cases
 SIZE_PRESETS = {
     '4k': (3840, 2160),
@@ -130,7 +137,7 @@ class Config:
         if pexels_key:
             print("   Validating API key...", end=" ")
             if self.validate_api_key('pexels', pexels_key):
-                print("✓ Valid!")
+                safe_print("✓ Valid!")
                 self.config['pexels_api_key'] = pexels_key
             else:
                 print("✗ Invalid key - not saved")
@@ -141,14 +148,14 @@ class Config:
         if pixabay_key:
             print("   Validating API key...", end=" ")
             if self.validate_api_key('pixabay', pixabay_key):
-                print("✓ Valid!")
+                safe_print("✓ Valid!")
                 self.config['pixabay_api_key'] = pixabay_key
             else:
                 print("✗ Invalid key - not saved")
 
         if pexels_key or pixabay_key:
             if self.save_config():
-                print(f"\n✓ Configuration saved to: {self.config_file}")
+                safe_print(f"\n✓ Configuration saved to: {self.config_file}")
             else:
                 print("\n✗ Could not save configuration")
 

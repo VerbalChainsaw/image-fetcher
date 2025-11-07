@@ -17,6 +17,13 @@ from io import BytesIO
 from config import Config
 from image_sources import ImageSourceManager
 
+# Fix Windows encoding issues
+try:
+    from utils import setup_windows_encoding, safe_print
+    setup_windows_encoding()
+except ImportError:
+    safe_print = print
+
 try:
     from tqdm import tqdm
     HAS_TQDM = True
@@ -197,7 +204,7 @@ class ImageFetcher:
             'images': []
         }
 
-        print(f"\n⬇️  Downloading and processing images...\n")
+        safe_print(f"\n⬇️  Downloading and processing images...\n")
 
         # Use tqdm if available, otherwise regular loop
         image_iterator = tqdm(images, desc="Processing", unit="img", total=num_images) if HAS_TQDM else images
@@ -247,7 +254,7 @@ class ImageFetcher:
                 })
 
                 if not HAS_TQDM:
-                    print(f"  ✓ Saved: {filename}")
+                    safe_print(f"  ✓ Saved: {filename}")
 
                 saved_count += 1
 
@@ -275,9 +282,9 @@ class ImageFetcher:
         print(f"\n{'='*60}")
         print(f"✅ Successfully saved {saved_count} images")
         if failed_count > 0:
-            print(f"⚠️  Failed to process {failed_count} images")
-        print(f"📊 Success rate: {saved_count}/{saved_count + failed_count} ({100*saved_count/(saved_count+failed_count):.1f}%)")
-        print(f"⏱️  Total time: {metadata['duration_seconds']}s")
+            safe_print(f"⚠️  Failed to process {failed_count} images")
+        safe_print(f"📊 Success rate: {saved_count}/{saved_count + failed_count} ({100*saved_count/(saved_count+failed_count):.1f}%)")
+        safe_print(f"⏱️  Total time: {metadata['duration_seconds']}s")
         print(f"📁 Location: {theme_dir.absolute()}")
         print(f"{'='*60}\n")
 
@@ -305,7 +312,7 @@ def interactive_mode():
     print(f"Available sources: {', '.join(available_sources)}")
 
     if len(available_sources) == 1:
-        print("\n💡 Tip: Run with --setup to configure Pexels and Pixabay API keys")
+        safe_print("\n💡 Tip: Run with --setup to configure Pexels and Pixabay API keys")
         print("   for better quality and more image sources!\n")
 
     # Get search theme
