@@ -134,20 +134,16 @@ class DuckDuckGoSource(ImageSource):
             # Add a delay to avoid rate limiting
             time.sleep(1)
 
-            # Build search query with optional category and negative keywords
+            # Build search query with optional category
             search_query = query
-
-            # Add negative keywords to filter out gaming content (common issue with search results)
-            negative_keywords = ['game', 'gaming', 'video game', 'league', 'valorant', 'fortnite']
-            search_query = f"{query} -{' -'.join(negative_keywords)}"
 
             # Add category to query if specified
             if category:
-                search_query = f"{search_query} {category}"
+                search_query = f"{query} {category}"
 
             with DDGS() as ddgs:
                 results = list(ddgs.images(
-                    keywords=search_query,
+                    search_query,
                     max_results=max_results * 2  # Fetch extra in case some fail to download
                 ))
 
