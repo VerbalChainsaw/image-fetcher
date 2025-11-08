@@ -46,7 +46,16 @@ python test_suite.py
 
 ## ✨ Features
 
-- **Intelligent Duplicate Detection** ⭐ NEW!
+- **Intelligent Library Curation** 🤖 NEW v2.2!
+  - **Build large libraries automatically** - Thousands of images while you sleep
+  - **AI-powered theme generation** - 8 categories with 15 themes each
+  - **Quality scoring system** - 5-metric scoring (resolution, sharpness, brightness, contrast, color)
+  - **Automatic organization** - Sort by quality tier (excellent/good/acceptable)
+  - **Zero intervention** - Set it and forget it batch processing
+  - **Scheduled curation** - Run on cron/Task Scheduler
+  - See [CURATION.md](CURATION.md) for complete guide
+
+- **Intelligent Duplicate Detection** ⭐ v2.1
   - Prevents re-downloading the same images across sessions
   - URL-based and content-based (perceptual hashing)
   - Works across all sources (Pexels, Pixabay, DuckDuckGo)
@@ -148,6 +157,75 @@ The test suite checks:
 - ✓ Web application setup
 
 Expected output: `🎉 All tests passed! System is ready to use.`
+
+## 🤖 Intelligent Library Curation (NEW v2.2!)
+
+Build massive, curated image libraries automatically without manual intervention.
+
+### Quick Start
+
+```bash
+# Curate a single category (300+ images)
+python curator.py nature
+
+# Curate multiple categories
+python curator.py nature urban abstract lifestyle
+
+# Automated batch curation (thousands of images)
+./curate_library.sh
+
+# Show available categories
+python curator.py --list-categories
+```
+
+### What It Does
+
+1. **Generates themes** - AI-powered theme expansion (15 themes per category)
+2. **Downloads images** - 20+ images per theme from multiple sources
+3. **Scores quality** - 5-metric quality analysis (0-100 score)
+4. **Organizes automatically** - Sorts into excellent/good/acceptable folders
+5. **Saves metadata** - Quality scores and collection stats
+
+### Available Categories
+
+- **nature** (mountains, forests, oceans, deserts)
+- **urban** (cities, architecture, streets)
+- **people** (business, families, activities)
+- **business** (offices, meetings, teams)
+- **technology** (AI, data centers, devices)
+- **lifestyle** (food, home, fitness)
+- **abstract** (patterns, textures, colors)
+- **seasonal** (holidays, seasons)
+
+### Configuration
+
+```bash
+# High-quality nature collection
+python curator.py nature --min-quality 85 --images-per-theme 30
+
+# Large multi-category library
+python curator.py nature urban abstract --images-per-theme 50
+
+# Use specific sources only
+python curator.py nature --sources pexels pixabay
+```
+
+### Example Output
+
+```
+curated_collections/
+└── nature/
+    └── 20250108_143022/
+        ├── excellent/          # Score 85-100
+        │   ├── mountain_landscape_92_001.jpg
+        │   └── mountain_landscape_92_001.json  # Quality scores
+        ├── good/               # Score 70-84
+        └── acceptable/         # Score 60-69
+```
+
+**See [CURATION.md](CURATION.md) for complete guide and advanced features!**
+
+---
 
 ## Usage
 
@@ -455,16 +533,19 @@ image-fetcher/
 ├── web_app.py                # Web interface backend
 ├── config.py                 # Configuration management
 ├── image_sources.py          # Image source providers
-├── image_db.py               # Duplicate detection database (NEW v2.1!)
+├── image_db.py               # Duplicate detection database (v2.1)
+├── curator.py                # Intelligent curation system (NEW v2.2!)
 ├── test_suite.py             # Comprehensive test suite
 ├── start_web.sh              # Web interface launcher
 ├── start_gui.sh              # Desktop GUI launcher
+├── curate_library.sh         # Automated curation script (NEW v2.2!)
 ├── templates/
 │   └── index.html            # Web interface (v2.1 - provider selection!)
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # Main documentation
 ├── QUICKSTART.md             # Quick start guide
-├── DUPLICATE_DETECTION.md    # Duplicate detection guide (NEW v2.1!)
+├── CURATION.md               # Intelligent curation guide (NEW v2.2!)
+├── DUPLICATE_DETECTION.md    # Duplicate detection guide (v2.1)
 ├── WEB_INTERFACE.md          # Web interface documentation
 ├── CHANGELOG.md              # Version history
 ├── ENHANCEMENTS.md           # Future roadmap
