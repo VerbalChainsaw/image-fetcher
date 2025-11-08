@@ -24,7 +24,7 @@ job_counter = 0
 job_lock = threading.Lock()
 
 
-def run_fetch_job(job_id, theme, count, sources, category, width, height):
+def run_fetch_job(job_id, theme, count, sources, category, width, height, skip_duplicates):
     """Background job to fetch images"""
     global jobs
 
@@ -35,14 +35,28 @@ def run_fetch_job(job_id, theme, count, sources, category, width, height):
             jobs[job_id]['percent'] = 10
 
         # Create fetcher with custom size
-        job_fetcher = ImageFetcher(config, target_size=(width, height))
+        job_fetcher = ImageFetcher(config, target_size=(width, height), skip_duplicates=skip_duplicates)
         result_dir = job_fetcher.fetch_and_process(theme, count, sources, category)
+
+        # Read metadata to get stats
+        metadata_file = Path(result_dir) / 'metadata.json'
+        stats = {}
+        if metadata_file.exists():
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+                stats = {
+                    'saved': metadata.get('actual_count', 0),
+                    'duplicates': metadata.get('duplicate_count', 0),
+                    'failed': metadata.get('failed_count', 0),
+                    'duration': metadata.get('duration_seconds', 0)
+                }
 
         with job_lock:
             jobs[job_id]['status'] = 'completed'
             jobs[job_id]['progress'] = f'Completed! Images saved to: {result_dir}'
             jobs[job_id]['result_dir'] = str(result_dir)
             jobs[job_id]['percent'] = 100
+            jobs[job_id]['stats'] = stats
 
     except Exception as e:
         with job_lock:
@@ -74,6 +88,7 @@ def fetch_images():
     category = data.get('category', '').strip() or None
     width = int(data.get('width', 1920))
     height = int(data.get('height', 1080))
+    skip_duplicates = data.get('skip_duplicates', True)  # Default to True
 
     if not theme:
         return jsonify({'error': 'Theme is required'}), 400
@@ -91,12 +106,13 @@ def fetch_images():
             'count': count,
             'status': 'queued',
             'progress': 'Queued...',
-            'percent': 0
+            'percent': 0,
+            'skip_duplicates': skip_duplicates
         }
 
     # Start background thread
     thread = threading.Thread(target=run_fetch_job,
-                             args=(job_id, theme, count, sources, category, width, height))
+                             args=(job_id, theme, count, sources, category, width, height, skip_duplicates))
     thread.daemon = True
     thread.start()
 
@@ -205,6 +221,38 @@ def serve_image(filename):
     """Serve downloaded images"""
     output_dir = Path('image_collections')
     return send_from_directory(output_dir, filename)
+
+
+@app.route('/api/db-stats')
+def get_db_stats():
+    """Get database statistics"""
+    try:
+        from image_db import ImageDatabase
+        db = ImageDatabase()
+
+        total_images = db.get_total_images()
+        stats_by_source = {}
+
+        for source in ['pexels', 'pixabay', 'duckduckgo']:
+            source_stats = db.get_stats_by_source(source)
+            stats_by_source[source] = [
+                {
+                    'theme': row['theme'],
+                    'downloaded': row['total_downloaded'],
+                    'duplicates': row['total_duplicates'],
+                    'failed': row['total_failed']
+                }
+                for row in source_stats[:5]  # Top 5 themes per source
+            ]
+
+        db.close()
+
+        return jsonify({
+            'total_images': total_images,
+            'by_source': stats_by_source
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 def run_web_app(host='127.0.0.1', port=5000, debug=False):

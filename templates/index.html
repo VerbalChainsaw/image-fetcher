@@ -632,19 +632,43 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="sources">📦 Image Sources</label>
-                        <select id="sources" name="sources">
-                            <option value="all">All Available Sources</option>
-                            {% if has_pexels %}<option value="pexels">Pexels (High Quality)</option>{% endif %}
-                            {% if has_pixabay %}<option value="pixabay">Pixabay (Large Variety)</option>{% endif %}
-                            <option value="duckduckgo">DuckDuckGo (No API Key)</option>
-                        </select>
+                        <label>📦 Image Sources <span class="label-info">(Select one or more)</span></label>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
+                            {% if has_pexels %}
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="source_check" value="pexels" class="source-checkbox" checked>
+                                <span style="font-weight: 500;">Pexels</span>
+                                <span style="font-size: 11px; color: #666;">(High Quality)</span>
+                            </label>
+                            {% endif %}
+                            {% if has_pixabay %}
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="source_check" value="pixabay" class="source-checkbox" checked>
+                                <span style="font-weight: 500;">Pixabay</span>
+                                <span style="font-size: 11px; color: #666;">(Large Variety)</span>
+                            </label>
+                            {% endif %}
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="source_check" value="duckduckgo" class="source-checkbox" checked>
+                                <span style="font-weight: 500;">DuckDuckGo</span>
+                                <span style="font-size: 11px; color: #666;">(No API Key)</span>
+                            </label>
+                        </div>
+                        <div class="help-text">Focus on one source when another is struggling</div>
                     </div>
 
                     <div class="form-group">
                         <label for="count">📊 Number of Images</label>
                         <input type="number" id="count" name="count" value="10" min="1" max="100" required>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; width: fit-content;">
+                        <input type="checkbox" id="skip_duplicates" name="skip_duplicates" checked style="width: auto;">
+                        <span>🔍 Skip Duplicate Images <span class="label-info">(Recommended - prevents re-downloading)</span></span>
+                    </label>
+                    <div class="help-text">Tracks downloaded images across sessions to avoid duplicates</div>
                 </div>
 
                 <div class="form-group">
@@ -829,13 +853,26 @@
         document.getElementById('fetchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Collect selected sources from checkboxes
+            const selectedSources = [];
+            document.querySelectorAll('.source-checkbox:checked').forEach(cb => {
+                selectedSources.push(cb.value);
+            });
+
+            // Validate at least one source is selected
+            if (selectedSources.length === 0) {
+                alert('Please select at least one image source!');
+                return;
+            }
+
             const formData = {
                 theme: document.getElementById('theme').value,
                 count: parseInt(document.getElementById('count').value),
-                sources: document.getElementById('sources').value,
+                sources: selectedSources,  // Array of selected sources
                 category: document.getElementById('category').value,
                 width: parseInt(document.getElementById('width').value),
-                height: parseInt(document.getElementById('height').value)
+                height: parseInt(document.getElementById('height').value),
+                skip_duplicates: document.getElementById('skip_duplicates').checked
             };
 
             // Show progress, hide results
@@ -898,20 +935,40 @@
             document.getElementById('progressMessage').textContent = job.progress || '';
 
             if (job.stats) {
-                document.getElementById('progressStats').innerHTML = `
+                const saved = job.stats.saved || 0;
+                const duplicates = job.stats.duplicates || 0;
+                const failed = job.stats.failed || 0;
+                const total = saved + duplicates + failed;
+                const successRate = total > 0 ? Math.round((saved / total) * 100) + '%' : 'N/A';
+
+                let statsHTML = `
                     <div class="stat">
-                        <div class="stat-value">${job.stats.completed || 0}</div>
-                        <div class="stat-label">Completed</div>
+                        <div class="stat-value" style="color: var(--success);">${saved}</div>
+                        <div class="stat-label">Downloaded</div>
                     </div>
+                `;
+
+                if (duplicates > 0) {
+                    statsHTML += `
+                        <div class="stat">
+                            <div class="stat-value" style="color: var(--info);">${duplicates}</div>
+                            <div class="stat-label">Duplicates Skipped</div>
+                        </div>
+                    `;
+                }
+
+                statsHTML += `
                     <div class="stat">
-                        <div class="stat-value">${job.stats.failed || 0}</div>
+                        <div class="stat-value" style="color: var(--error);">${failed}</div>
                         <div class="stat-label">Failed</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value">${job.stats.rate || 'N/A'}</div>
+                        <div class="stat-value">${successRate}</div>
                         <div class="stat-label">Success Rate</div>
                     </div>
                 `;
+
+                document.getElementById('progressStats').innerHTML = statsHTML;
             }
         }
 

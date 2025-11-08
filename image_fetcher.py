@@ -16,6 +16,7 @@ from PIL import Image
 from io import BytesIO
 from config import Config
 from image_sources import ImageSourceManager
+from image_db import ImageDatabase
 
 # Fix Windows encoding issues
 try:
@@ -42,7 +43,7 @@ logging.basicConfig(
 )
 
 class ImageFetcher:
-    def __init__(self, config, output_dir=None, target_size=(1920, 1080)):
+    def __init__(self, config, output_dir=None, target_size=(1920, 1080), skip_duplicates=True):
         """
         Initialize the Image Fetcher
 
@@ -50,11 +51,14 @@ class ImageFetcher:
             config: Config object with API keys
             output_dir: Base directory for saving images
             target_size: Target size for resized images (width, height)
+            skip_duplicates: Whether to skip previously downloaded images (default: True)
         """
         self.config = config
         self.output_dir = Path(output_dir or config.config.get('output_dir', 'image_collections'))
         self.target_size = target_size
         self.source_manager = ImageSourceManager(config)
+        self.skip_duplicates = skip_duplicates
+        self.db = ImageDatabase() if skip_duplicates else None
 
     def search_images(self, theme, max_images=10, sources='all', category=None):
         """
@@ -194,6 +198,7 @@ class ImageFetcher:
         # Download and process images
         saved_count = 0
         failed_count = 0
+        duplicate_count = 0
         metadata = {
             'theme': theme,
             'timestamp': timestamp,
@@ -201,10 +206,13 @@ class ImageFetcher:
             'sources': sources,
             'category': category,
             'target_size': self.target_size,
+            'skip_duplicates': self.skip_duplicates,
             'images': []
         }
 
         safe_print(f"\n⬇️  Downloading and processing images...\n")
+        if self.skip_duplicates:
+            safe_print(f"🔍 Duplicate detection: ENABLED (will skip already-downloaded images)\n")
 
         # Use tqdm if available, otherwise regular loop
         image_iterator = tqdm(images, desc="Processing", unit="img", total=num_images) if HAS_TQDM else images
@@ -219,6 +227,14 @@ class ImageFetcher:
 
             if not HAS_TQDM:
                 print(f"[{saved_count + 1}/{num_images}] Processing image {i + 1} from {source}...")
+
+            # Check for duplicate URL
+            if self.skip_duplicates and self.db.is_duplicate_url(url):
+                if not HAS_TQDM:
+                    print(f"  ⏭️  Skipped: Duplicate URL (already downloaded)")
+                logging.info(f"Skipped duplicate URL: {url}")
+                duplicate_count += 1
+                continue
 
             # Download image
             img = self.download_image(url)
@@ -235,13 +251,39 @@ class ImageFetcher:
                     failed_count += 1
                     continue
 
+                # Check for duplicate image (same content, different URL)
+                if self.skip_duplicates:
+                    img_hash = self.db.calculate_image_hash(img)
+                    if img_hash and self.db.is_duplicate_hash(img_hash):
+                        if not HAS_TQDM:
+                            print(f"  ⏭️  Skipped: Duplicate image (same content from different source)")
+                        logging.info(f"Skipped duplicate image hash: {img_hash[:16]}...")
+                        duplicate_count += 1
+                        continue
+
                 # Resize and crop
-                img = self.resize_and_crop(img)
+                img_resized = self.resize_and_crop(img)
 
                 # Save image
                 filename = f"{safe_theme}_{saved_count + 1:03d}.jpg"
                 filepath = theme_dir / filename
-                img.save(filepath, 'JPEG', quality=95)
+                img_resized.save(filepath, 'JPEG', quality=95)
+
+                # Get file size
+                file_size = filepath.stat().st_size
+
+                # Add to database
+                if self.skip_duplicates:
+                    self.db.add_image(
+                        url=url,
+                        image_hash=img_hash,
+                        source=source,
+                        theme=theme,
+                        filename=str(filepath),
+                        file_size=file_size,
+                        width=self.target_size[0],
+                        height=self.target_size[1]
+                    )
 
                 # Store metadata
                 metadata['images'].append({
@@ -268,6 +310,7 @@ class ImageFetcher:
         # Save metadata
         metadata['actual_count'] = saved_count
         metadata['failed_count'] = failed_count
+        metadata['duplicate_count'] = duplicate_count
         metadata['duration_seconds'] = round(time.time() - start_time, 2)
 
         metadata_file = theme_dir / 'metadata.json'
@@ -278,17 +321,33 @@ class ImageFetcher:
         except Exception as e:
             logging.error(f"Failed to save metadata: {e}")
 
+        # Record session stats in database
+        if self.skip_duplicates:
+            source_str = sources if isinstance(sources, str) else ','.join(sources)
+            self.db.record_session_stats(
+                theme=theme,
+                source=source_str,
+                requested=num_images,
+                downloaded=saved_count,
+                duplicates=duplicate_count,
+                failed=failed_count
+            )
+
         # Summary
         print(f"\n{'='*60}")
         print(f"✅ Successfully saved {saved_count} images")
+        if duplicate_count > 0:
+            safe_print(f"⏭️  Skipped {duplicate_count} duplicates (already downloaded)")
         if failed_count > 0:
             safe_print(f"⚠️  Failed to process {failed_count} images")
-        safe_print(f"📊 Success rate: {saved_count}/{saved_count + failed_count} ({100*saved_count/(saved_count+failed_count):.1f}%)")
+        total_processed = saved_count + failed_count + duplicate_count
+        if total_processed > 0:
+            safe_print(f"📊 Success rate: {saved_count}/{total_processed} ({100*saved_count/total_processed:.1f}%)")
         safe_print(f"⏱️  Total time: {metadata['duration_seconds']}s")
         print(f"📁 Location: {theme_dir.absolute()}")
         print(f"{'='*60}\n")
 
-        logging.info(f"Completed: {saved_count} saved, {failed_count} failed, {metadata['duration_seconds']}s")
+        logging.info(f"Completed: {saved_count} saved, {duplicate_count} duplicates, {failed_count} failed, {metadata['duration_seconds']}s")
 
         return theme_dir
 
@@ -355,10 +414,14 @@ def interactive_mode():
     else:
         size = (1920, 1080)
 
+    # Ask about duplicate detection
+    skip_dup_input = input("\nSkip duplicate images from previous downloads? [Y/n]: ").strip().lower()
+    skip_duplicates = skip_dup_input != 'n'
+
     print("\n" + "="*60 + "\n")
 
     # Run fetcher
-    fetcher = ImageFetcher(config, target_size=size)
+    fetcher = ImageFetcher(config, target_size=size, skip_duplicates=skip_duplicates)
     fetcher.fetch_and_process(theme, count, sources, category)
 
 
@@ -439,8 +502,18 @@ Examples:
                        help='Batch process themes from file')
     parser.add_argument('--setup', action='store_true',
                        help='Run API key setup wizard')
+    parser.add_argument('--no-duplicates', action='store_true',
+                       help='Disable duplicate detection (allows re-downloading same images)')
+    parser.add_argument('--db-stats', action='store_true',
+                       help='Show database statistics and exit')
 
     args = parser.parse_args()
+
+    # Database stats mode
+    if args.db_stats:
+        from image_db import print_database_stats
+        print_database_stats()
+        return
 
     # Setup mode
     if args.setup:
@@ -493,9 +566,12 @@ Examples:
     # Prepare sources
     sources = args.sources if args.sources else 'all'
 
+    # Determine skip_duplicates setting (skip by default, unless --no-duplicates flag is set)
+    skip_duplicates = not args.no_duplicates
+
     # Run fetcher
     config = Config()
-    fetcher = ImageFetcher(config, output_dir=args.output, target_size=size)
+    fetcher = ImageFetcher(config, output_dir=args.output, target_size=size, skip_duplicates=skip_duplicates)
     fetcher.fetch_and_process(args.theme, args.count, sources, args.category)
 
 

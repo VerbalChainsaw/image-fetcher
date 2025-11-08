@@ -20,7 +20,9 @@ Then open your browser to: **http://127.0.0.1:5000**
 ### What You'll See:
 - 🎨 Beautiful purple gradient interface
 - 📐 Size preset buttons (4K, FHD, HD, Mobile, etc.)
-- 📊 Real-time progress bars
+- 📦 **Individual provider selection** (focus on one source) ⭐ NEW!
+- 🔍 **Automatic duplicate detection** (skips re-downloads) ⭐ NEW!
+- 📊 Real-time progress bars with duplicate stats
 - 🖼️ Image gallery with previews
 - 📚 Download history
 - ⚙️ Settings panel
@@ -180,6 +182,64 @@ pip install -r requirements.txt
 
 ---
 
+## Duplicate Detection 🔍 NEW!
+
+**Prevents re-downloading the same images across sessions!**
+
+### How It Works:
+- Automatically tracks all downloaded images in a database
+- Skips images you've already downloaded (by URL and content)
+- Works across all sources (Pexels, Pixabay, DuckDuckGo)
+- Shows duplicate count in results
+
+### Usage:
+```bash
+# Duplicates automatically skipped (default)
+python image_fetcher.py "sunset" 10
+
+# View database statistics
+python image_fetcher.py --db-stats
+
+# Disable if you want re-downloads
+python image_fetcher.py "sunset" 10 --no-duplicates
+```
+
+### Benefits:
+- ✅ Save bandwidth (don't re-download)
+- ✅ Save time (skip processing)
+- ✅ Build larger collections over time
+- ✅ Resume failed downloads
+
+**Learn more:** See [DUPLICATE_DETECTION.md](DUPLICATE_DETECTION.md)
+
+---
+
+## Individual Provider Selection 📦 NEW!
+
+**Focus on one source when another is struggling!**
+
+### Web Interface:
+Check/uncheck providers individually:
+- ☑ Pexels (High Quality)
+- ☑ Pixabay (Large Variety)
+- ☑ DuckDuckGo (No API Key)
+
+### Command Line:
+```bash
+# Use only Pexels
+python image_fetcher.py "nature" 10 --sources pexels
+
+# Use Pexels and Pixabay
+python image_fetcher.py "city" 15 --sources pexels pixabay
+
+# Try different sources separately
+python image_fetcher.py "ocean" 10 --sources pexels
+python image_fetcher.py "ocean" 10 --sources pixabay  # Won't duplicate!
+python image_fetcher.py "ocean" 10 --sources duckduckgo
+```
+
+---
+
 ## Pro Tips 💡
 
 1. **Use the web interface** for the best experience
@@ -188,6 +248,8 @@ pip install -r requirements.txt
 4. **Try batch mode** for multiple themes at once
 5. **Check the history** to track your downloads
 6. **Preview images** in the web interface before downloading
+7. **Let duplicate detection work** - it saves time and bandwidth ⭐ NEW!
+8. **Focus on one provider** when another is having issues ⭐ NEW!
 
 ---
 

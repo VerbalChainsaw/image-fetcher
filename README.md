@@ -46,10 +46,18 @@ python test_suite.py
 
 ## ✨ Features
 
+- **Intelligent Duplicate Detection** ⭐ NEW!
+  - Prevents re-downloading the same images across sessions
+  - URL-based and content-based (perceptual hashing)
+  - Works across all sources (Pexels, Pixabay, DuckDuckGo)
+  - Tracks download history in SQLite database
+  - See [DUPLICATE_DETECTION.md](DUPLICATE_DETECTION.md) for details
+
 - **Multiple Image Sources**
   - Pexels (high-quality stock photos)
   - Pixabay (large variety of images)
   - DuckDuckGo (no API key required)
+  - **Individual provider selection** - Focus on one source when others struggle
 
 - **Smart Image Processing**
   - Automatic resizing to your target dimensions
@@ -326,7 +334,13 @@ options:
   --interactive, -i     Run in interactive mode
   --batch FILE, -b      Batch process themes from file
   --setup               Run API key setup wizard
+  --no-duplicates       Disable duplicate detection (allows re-downloading)
+  --db-stats            Show database statistics and exit
 ```
+
+**New in v2.1:**
+- `--no-duplicates`: Bypass duplicate detection if you want to re-download images
+- `--db-stats`: View your download history and duplicate statistics
 
 ## Configuration
 
@@ -436,23 +450,25 @@ Example `metadata.json`:
 
 ```
 image-fetcher/
-├── image_fetcher.py      # Main CLI application
-├── gui_app.py            # Desktop GUI application
-├── web_app.py            # Web interface backend
-├── config.py             # Configuration management
-├── image_sources.py      # Image source providers
-├── test_suite.py         # Comprehensive test suite (NEW!)
-├── start_web.sh          # Web interface launcher (NEW!)
-├── start_gui.sh          # Desktop GUI launcher (NEW!)
+├── image_fetcher.py          # Main CLI application
+├── gui_app.py                # Desktop GUI application
+├── web_app.py                # Web interface backend
+├── config.py                 # Configuration management
+├── image_sources.py          # Image source providers
+├── image_db.py               # Duplicate detection database (NEW v2.1!)
+├── test_suite.py             # Comprehensive test suite
+├── start_web.sh              # Web interface launcher
+├── start_gui.sh              # Desktop GUI launcher
 ├── templates/
-│   └── index.html        # Web interface (v2.0 - completely redesigned!)
-├── requirements.txt      # Python dependencies
-├── README.md             # Main documentation
-├── QUICKSTART.md         # Quick start guide (NEW!)
-├── WEB_INTERFACE.md      # Web interface documentation (NEW!)
-├── CHANGELOG.md          # Version history (NEW!)
-├── ENHANCEMENTS.md       # Future roadmap (NEW!)
-└── REVIEW.md             # Code review & debug notes (NEW!)
+│   └── index.html            # Web interface (v2.1 - provider selection!)
+├── requirements.txt          # Python dependencies
+├── README.md                 # Main documentation
+├── QUICKSTART.md             # Quick start guide
+├── DUPLICATE_DETECTION.md    # Duplicate detection guide (NEW v2.1!)
+├── WEB_INTERFACE.md          # Web interface documentation
+├── CHANGELOG.md              # Version history
+├── ENHANCEMENTS.md           # Future roadmap
+└── REVIEW.md                 # Code review & debug notes
 ```
 
 ## License
