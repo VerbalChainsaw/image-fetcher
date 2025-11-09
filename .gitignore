@@ -26,6 +26,16 @@ wheels/
 # Image collections output
 image_collections/
 
+# Video collections output
+video_collections/
+
+# Log files
+*.log
+
+# Database files
+*.db
+*.db-journal
+
 # IDE
 .vscode/
 .idea/
