@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  video-fetcher-pro:
+    build: .
+    container_name: video-fetcher-pro
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./video_collections:/app/video_collections
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+      - ~/.video_fetcher_config.json:/root/.video_fetcher_config.json
+    environment:
+      - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - PIXABAY_API_KEY=${PIXABAY_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:5001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - video-fetcher-network
+
+networks:
+  video-fetcher-network:
+    driver: bridge
+
+volumes:
+  video_collections:
+  logs:
+  cache:
